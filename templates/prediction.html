@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>College Seat Prediction</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        select, input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #5cb85c;
+            border: none;
+            color: white;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #4cae4c;
+        }
+        .error-message, .result-message {
+            text-align: center;
+            font-size: 16px;
+        }
+        .error-message {
+            color: red;
+        }
+        .result-message {
+            color: green;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>College Seat Prediction</h1>
+        <form id="predictionForm">
+            <label for="college">Select College:</label>
+            <select id="college" name="college" required>
+                <option value="">Select a college</option> <!-- Prompt for selection -->
+            </select>
+
+            <label for="course">Select Course:</label>
+            <select id="course" name="course" required>
+                <option value="">Select a course</option> <!-- Prompt for selection -->
+            </select>
+
+            <label for="category">Select Category:</label>
+            <select id="category" name="category" required>
+                <option value="">Select a category</option> <!-- Prompt for selection -->
+            </select>
+
+            <label for="gender">Select Gender:</label>
+            <select id="gender" name="gender" required>
+                <option value="">Select gender</option> <!-- Prompt for selection -->
+            </select>
+
+            <label for="rank">Enter Rank:</label>
+            <input type="text" id="rank" name="rank" required placeholder="Enter your rank">
+
+            <button type="submit">Predict</button>
+        </form>
+
+        <div id="result">
+            <p class="error-message" id="error-message"></p>
+            <p class="result-message" id="result-message"></p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const collegeSelect = document.getElementById('college');
+            const courseSelect = document.getElementById('course');
+            const categorySelect = document.getElementById('category');
+            const genderSelect = document.getElementById('gender');
+            const rankInput = document.getElementById('rank');
+            const form = document.getElementById('predictionForm');
+            const errorMessage = document.getElementById('error-message');
+            const resultMessage = document.getElementById('result-message');
+
+            // Fetch options from the backend
+            fetch('/get_options')
+                .then(response => response.json())
+                .then(data => {
+                    populateSelect(collegeSelect, data.colleges);
+                    populateSelect(courseSelect, data.courses);
+                    populateSelect(categorySelect, data.categories);
+                    populateSelect(genderSelect, data.genders);
+                })
+                .catch(error => {
+                    console.error('Error fetching options:', error);
+                    errorMessage.textContent = 'Could not load options. Please try again.';
+                });
+
+            function populateSelect(selectElement, options) {
+                selectElement.innerHTML = '';  // Clear existing options
+                options.forEach(option => {
+                    const optionElement = document.createElement('option');
+                    optionElement.value = option;
+                    optionElement.textContent = option;
+                    selectElement.appendChild(optionElement);
+                });
+            }
+
+            form.addEventListener('submit', function(event) {
+                event.preventDefault();
+
+                const formData = {
+                    college: collegeSelect.value,
+                    course: courseSelect.value,
+                    category: categorySelect.value,
+                    gender: genderSelect.value,
+                    rank: rankInput.value
+                };
+
+                // Clear previous messages
+                errorMessage.textContent = '';
+                resultMessage.textContent = '';
+
+                fetch('/make_prediction', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.prediction) {
+                        resultMessage.textContent = data.prediction;
+                    } else {
+                        errorMessage.textContent = 'Prediction could not be made. Please check your inputs.';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error making prediction:', error);
+                    errorMessage.textContent = 'Could not make prediction. Please try again.';
+                });
+            });
+        });
+    </script>
+</body>
+</html>
